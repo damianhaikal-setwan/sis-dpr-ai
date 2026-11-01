@@ -6,13 +6,17 @@
   "vars": {
     "SUPABASE_URL": "https://yyddgjnwhuyblyovzksd.supabase.co",
     "ALLOWED_ORIGINS": "https://sis-dpr.pages.dev",
-    "OPENAI_MODEL": "gpt-4.1-mini"
+    "OPENAI_MODEL": "gpt-4.1-mini",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_JwB6MlzFtoiW-gZ15wWHow_D2zh5cFx"
   },
   "ratelimits": [
     {
       "name": "AI_RATE_LIMITER",
       "namespace_id": "68271",
-      "simple": {"limit": 6, "period": 60}
+      "simple": {
+        "limit": 6,
+        "period": 60
+      }
     }
   ]
 }

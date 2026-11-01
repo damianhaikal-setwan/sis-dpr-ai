@@ -10,6 +10,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const SECRET_FIELD = /password|token|secret|api.?key|katasandi|nik|nip|alamat|telepon|email|rekeningbank|nomorrekeningbank|nohp|nomorhp|tanda.?tangan/i;
 const MAX_BODY = 16000;
 
+// Public Supabase project settings: publishable key is NOT a secret.
+// Fallback covers Workers created via Dashboard Code Editor, which does not
+// automatically load the local wrangler.jsonc vars. Override with env vars.
+const DEFAULT_SUPABASE_URL = 'https://yyddgjnwhuyblyovzksd.supabase.co';
+const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_JwB6MlzFtoiW-gZ15wWHow_D2zh5cFx';
+
 function respond(body, status=200, origin='null') {
   return new Response(JSON.stringify(body), {status, headers:{
     'Content-Type':'application/json; charset=utf-8',
@@ -22,8 +28,8 @@ function respond(body, status=200, origin='null') {
   }});
 }
 function settings(env) {
-  const url=String(env.SUPABASE_URL||'').replace(/\/+$/,'');
-  const key=String(env.SUPABASE_PUBLISHABLE_KEY||'');
+  const url=String(env.SUPABASE_URL||DEFAULT_SUPABASE_URL).trim().replace(/\/+$/,'');
+  const key=String(env.SUPABASE_PUBLISHABLE_KEY||DEFAULT_SUPABASE_PUBLISHABLE_KEY).trim();
   if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url) || !key.startsWith('sb_publishable_') && key.length<35) return null;
   return {url,key};
 }
@@ -90,7 +96,17 @@ export default {
   const origin=request.headers.get('origin')||'';
   const allow=String(env.ALLOWED_ORIGINS||'https://sis-dpr.pages.dev').split(',').map(x=>x.trim()).filter(Boolean);
   const pathname=new URL(request.url).pathname;
-  if(request.method==='GET'&&pathname==='/health')return respond({service:'SIS-DPR AI Cloudflare Worker',ok:true},200,allow.includes(origin)?origin:'null');
+  if(request.method==='GET'&&pathname==='/health'){
+    const checks={
+      supabase_configured:!!settings(env),
+      ai_secret_configured:!!String(env.OPENAI_API_KEY||'').trim(),
+      rate_limiter_configured:typeof env.AI_RATE_LIMITER?.limit==='function'
+    };
+    const ready=Object.values(checks).every(Boolean);
+    return respond({service:'SIS-DPR AI Cloudflare Worker',ok:ready,checks,
+      message:ready?'Konfigurasi backend siap untuk pengujian login dan AI.':'Lengkapi konfigurasi yang masih false. /health tidak menguji panggilan layanan eksternal.'},
+      ready?200:503,allow.includes(origin)?origin:'null');
+  }
   if(!allow.includes(origin))return respond({error:'Origin tidak diizinkan. Tambahkan domain situs ke ALLOWED_ORIGINS.'},403,'null');
   if(request.method==='OPTIONS')return respond({ok:true},200,origin);
   if(pathname!=='/api/ai'||request.method!=='POST')return respond({error:'Gunakan POST /api/ai.'},404,origin);
@@ -98,7 +114,7 @@ export default {
   const cfg=settings(env);
   if(!cfg)return respond({error:'Supabase URL atau publishable key belum dikonfigurasi di Worker.'},503,origin);
   if(!env.OPENAI_API_KEY)return respond({error:'OPENAI_API_KEY belum dipasang sebagai Cloudflare Worker Secret.'},503,origin);
-  if(!env.AI_RATE_LIMITER?.limit)return respond({error:'Rate limiter Cloudflare belum terpasang pada Worker. Periksa wrangler.jsonc.'},503,origin);
+  if(typeof env.AI_RATE_LIMITER?.limit!=='function')return respond({error:'Rate limiter Cloudflare belum terpasang pada Worker. Periksa wrangler.jsonc.'},503,origin);
   const token=/^Bearer\s+(\S+)$/i.exec(request.headers.get('authorization')||'')?.[1];
   if(!token)return respond({error:'Sesi login diperlukan.'},401,origin);
   try {
