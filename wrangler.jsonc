@@ -1,11 +1,16 @@
 {
-  // Gunakan nama staging dulu agar Worker produksi SIS-DPR tidak tertimpa.
+  // STAGING ONLY: never change this name to production during diagnosis.
   "name": "sis-dpr-ai-staging",
   "main": "src/index.js",
   "compatibility_date": "2026-10-30",
+  "observability": { "enabled": true },
   "ai": { "binding": "AI" },
+  "ratelimits": [
+    { "name": "AI_RATE_LIMITER", "namespace_id": "9382611", "simple": { "limit": 12, "period": 60 } }
+  ],
   "vars": {
     "ALLOWED_ORIGIN": "https://sis-dpr.pages.dev",
-    "SUPABASE_URL": "https://GANTI_PROJECT.supabase.co"
+    "SUPABASE_URL": "https://GANTI_PROJECT.supabase.co",
+    "AI_MODEL": "@cf/meta/llama-3.1-8b-instruct-fp8"
   }
 }
