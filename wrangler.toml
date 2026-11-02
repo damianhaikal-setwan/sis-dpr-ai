@@ -1,0 +1,12 @@
+name = "sis-dpr-ai"
+main = "src/index.mjs"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[ai]
+binding = "AI"
+
+[vars]
+SUPABASE_URL = "https://yyddgjnwhuyblyovzksd.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_JwB6MlzFtoiW-gZ15wWHow_D2zh5cFx"
+ALLOWED_ORIGINS = "https://sis-dpr.pages.dev"
